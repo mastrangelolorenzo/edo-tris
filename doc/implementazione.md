@@ -13,9 +13,10 @@ Realizzazione di quanto descritto in [requisiti.md](requisiti.md): una partita a
 | **EDO-X** | `actor/edo-x` | Python 3.12, autobahn (asyncio) | Braccio dell'umano. Esegue `moveX`, poi chiama `movedX`. Reagisce agli esiti. |
 | **EDO-Y** | `actor/edo-y` | Python 3.12, autobahn (asyncio) | Braccio dell'agente. Esegue `moveY`, poi chiama `movedY`. Reazioni opposte a EDO-X (tranne la patta). |
 | **BUTLER** | `actor/butler` | Python 3.12, autobahn + asyncio streams | Traduce tra WAMP e il socket TCP di TRIS. |
+| **FRAME** | `actor/frame` | Python 3.12, autobahn | Servizio accessorio: converte le coordinate globali di celle e pedine nelle coordinate locali di ciascun braccio. Configurazione in `field.json`. |
 | **TRIS** | `actor/tris` | Python 3.12, asyncio (solo libreria standard) | Motore di gioco simulato: risponde con una casella libera a caso; a campo pieno invia un esito a caso (F, X, Y). |
 
-Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (5 container: crossbar, tris, butler, edo-x, edo-y).
+Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (6 container: crossbar, tris, butler, edo-x, edo-y, frame).
 
 ## 2. Pattern e scelte implementative
 
@@ -28,6 +29,8 @@ Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (5 contai
   | `com.tris.movedX(n)` | BUTLER | EDO-X |
   | `com.tris.moveY(n)` | EDO-Y | BUTLER |
   | `com.tris.movedY(n)` | WINGRID | EDO-Y |
+  | `com.tris.localCell(arm, n)` | FRAME | EDO-X, EDO-Y |
+  | `com.tris.localPiece(arm, n)` | FRAME | EDO-X, EDO-Y |
 
   | Topic | Pubblicato da | Sottoscritto da |
   |---|---|---|
@@ -39,6 +42,12 @@ Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (5 contai
 - **Simulazione dei robot.** Ogni attore EDO ha una classe `Arm` con i metodi `place_piece`, `celebrate`, `sad`, `salute` che stampano nel log e attendono 2 secondi. Per usare i robot reali basta implementare questi metodi con l'SDK e.DO (la variabile `EDO_IP` e' gia' letta ma non ancora usata).
 - **Avvio ordinato.** crossbar ha un `healthcheck` (porta 8080 in ascolto); butler, edo-x ed edo-y partono solo quando e' `healthy`. In piu' `restart: on-failure` li rilancia se la connessione cade all'avvio.
 - **Librerie.** `autobahn[asyncio]==24.4.2` (client WAMP Python, backend asyncio); `autobahn-browser 22.10.1` (client WAMP nel browser); `asyncio` della libreria standard per TCP e concorrenza.
+
+### Coordinate locali (FRAME)
+
+`actor/frame/field.json` contiene, in coordinate **globali** (mm): le 9 celle, e per ogni braccio le sue pedine e i 3 punti fissi `origin`, `left`, `right`. Convenzione: asse x locale = direzione left -> right; asse y locale = x ruotato di 90 gradi antiorario (in avanti, visto dal braccio rivolto al campo); origine locale = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
+
+Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 
 ## 3. Come avviare il test
 

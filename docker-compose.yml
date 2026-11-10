@@ -45,3 +45,14 @@ services:
     restart: on-failure
     environment:
       CROSSBAR_URL: ws://crossbar:8080/ws
+
+  frame:
+    build: ./actor/frame
+    depends_on:
+      crossbar:
+        condition: service_healthy
+    restart: on-failure
+    volumes:
+      - ./actor/frame/field.json:/app/field.json:ro   # modificabile senza rebuild
+    environment:
+      CROSSBAR_URL: ws://crossbar:8080/ws
