@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" font-family="Segoe UI, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#333"/>
+    </marker>
+    <marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#b5651d"/>
+    </marker>
+  </defs>
+  <rect width="900" height="500" fill="#ffffff"/>
+
+  <!-- broker -->
+  <rect x="330" y="30" width="240" height="420" rx="12" fill="#fff3d6" stroke="#b5651d" stroke-width="2"/>
+  <text x="450" y="55" text-anchor="middle" font-size="15" font-weight="bold">BROCKER (crossbar.io)</text>
+  <text x="450" y="73" text-anchor="middle" fill="#555">realm1 &#183; ws://:8080/ws</text>
+  <text x="450" y="430" text-anchor="middle" fill="#555">RPC (call/register) + pub/sub</text>
+
+  <!-- attori sinistra -->
+  <rect x="30" y="40" width="170" height="70" rx="8" fill="#e3efff" stroke="#1a6fd8" stroke-width="2"/>
+  <text x="115" y="68" text-anchor="middle" font-weight="bold" font-size="14">WINGRID</text>
+  <text x="115" y="88" text-anchor="middle" fill="#555">html + javascript (utente)</text>
+
+  <rect x="30" y="200" width="170" height="70" rx="8" fill="#e3efff" stroke="#1a6fd8" stroke-width="2"/>
+  <text x="115" y="228" text-anchor="middle" font-weight="bold" font-size="14">EDO-X</text>
+  <text x="115" y="248" text-anchor="middle" fill="#555">python &#183; braccio umano</text>
+
+  <rect x="30" y="360" width="170" height="70" rx="8" fill="#fde5e0" stroke="#d8351a" stroke-width="2"/>
+  <text x="115" y="388" text-anchor="middle" font-weight="bold" font-size="14">EDO-Y</text>
+  <text x="115" y="408" text-anchor="middle" fill="#555">python &#183; braccio agente</text>
+
+  <!-- attori destra -->
+  <rect x="700" y="120" width="170" height="110" rx="8" fill="#e6f4e1" stroke="#3a8a2a" stroke-width="2"/>
+  <text x="785" y="150" text-anchor="middle" font-weight="bold" font-size="14">BUTLER</text>
+  <text x="785" y="170" text-anchor="middle" fill="#555">python &#183; ponte</text>
+  <text x="785" y="186" text-anchor="middle" fill="#555">WAMP &#8596; TCP</text>
+
+  <rect x="700" y="340" width="170" height="70" rx="8" fill="#eee" stroke="#666" stroke-width="2"/>
+  <text x="785" y="368" text-anchor="middle" font-weight="bold" font-size="14">TRIS</text>
+  <text x="785" y="388" text-anchor="middle" fill="#555">motore IA &#183; TCP :5000</text>
+
+  <!-- RPC sinistra -->
+  <g stroke="#333" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <line x1="200" y1="62" x2="330" y2="62"/>          <!-- 1 -->
+    <line x1="330" y1="92" x2="200" y2="92"/>          <!-- 10 -->
+    <line x1="330" y1="215" x2="200" y2="215"/>        <!-- 2 -->
+    <line x1="200" y1="250" x2="330" y2="250"/>        <!-- 3 -->
+    <line x1="330" y1="375" x2="200" y2="375"/>        <!-- 8 -->
+    <line x1="200" y1="412" x2="330" y2="412"/>        <!-- 9 -->
+    <line x1="570" y1="140" x2="700" y2="140"/>        <!-- 4 -->
+    <line x1="700" y1="170" x2="570" y2="170"/>        <!-- 7 -->
+    <line x1="760" y1="230" x2="760" y2="340"/>        <!-- 5 -->
+    <line x1="810" y1="340" x2="810" y2="230"/>        <!-- 6 -->
+  </g>
+  <!-- pubblicazione esiti -->
+  <g stroke="#b5651d" stroke-width="1.6" stroke-dasharray="5 4" fill="none" marker-end="url(#p)">
+    <line x1="700" y1="205" x2="570" y2="205"/>
+    <line x1="330" y1="104" x2="200" y2="104"/>
+    <line x1="330" y1="262" x2="200" y2="262"/>
+    <line x1="330" y1="424" x2="200" y2="424"/>
+  </g>
+
+  <g text-anchor="middle" fill="#111">
+    <text x="265" y="57"><tspan font-weight="bold">1</tspan> call moveX</text>
+    <text x="265" y="87"><tspan font-weight="bold">10</tspan> call movedY</text>
+    <text x="265" y="210"><tspan font-weight="bold">2</tspan> moveX</text>
+    <text x="265" y="245"><tspan font-weight="bold">3</tspan> call movedX</text>
+    <text x="265" y="370"><tspan font-weight="bold">8</tspan> moveY</text>
+    <text x="265" y="407"><tspan font-weight="bold">9</tspan> call movedY</text>
+    <text x="635" y="135"><tspan font-weight="bold">4</tspan> movedX</text>
+    <text x="635" y="165"><tspan font-weight="bold">7</tspan> call moveY</text>
+    <text x="635" y="200" fill="#b5651d">esito (publish)</text>
+    <text x="752" y="290" text-anchor="end"><tspan font-weight="bold">5</tspan> "n"</text>
+    <text x="818" y="290" text-anchor="start"><tspan font-weight="bold">6</tspan> "m" / F,X,Y</text>
+    <text x="265" y="120" fill="#b5651d">esito (subscribe)</text>
+    <text x="265" y="278" fill="#b5651d">esito (subscribe)</text>
+    <text x="265" y="440" fill="#b5651d">esito (subscribe)</text>
+  </g>
+
+  <!-- legenda -->
+  <g transform="translate(30,466)" fill="#333">
+    <line x1="0" y1="8" x2="30" y2="8" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+    <text x="38" y="12">RPC (numero = ordine dei passaggi di una mossa)</text>
+    <line x1="400" y1="8" x2="430" y2="8" stroke="#b5651d" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#p)"/>
+    <text x="438" y="12">pub/sub: flap, winner_x, winner_y (solo a fine partita)</text>
+  </g>
+</svg>

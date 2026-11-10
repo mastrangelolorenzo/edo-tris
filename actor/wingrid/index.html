@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WINGRID - Tris</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f4f1ea; color: #222;
+         display: flex; flex-direction: column; align-items: center; margin: 0; padding: 1rem; }
+  h1 { margin: .5rem 0; }
+  #status { min-height: 1.5em; margin-bottom: 1rem; font-size: 1.1rem; }
+  #stage { position: relative; transition: filter .6s; }
+  #stage.gray { filter: grayscale(1); }
+  #board { display: grid; grid-template-columns: repeat(3, 7rem); gap: 6px; }
+  .cell { width: 7rem; height: 7rem; font-size: 3.5rem; font-weight: bold; border: 0;
+          border-radius: 8px; background: #fff; cursor: pointer; box-shadow: 0 1px 4px #0003; }
+  .cell:disabled { cursor: default; }
+  .cell:not(:disabled):hover { background: #e8f0ff; }
+  .cell.X { color: #1a6fd8; } .cell.Y { color: #d8351a; }
+  .cell.pending { opacity: .45; }
+  #overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+             background: #fff8; font-size: 6rem; border-radius: 8px; }
+  #overlay.show { display: flex; }
+  #overlay svg { width: 12rem; height: 12rem; }
+  #again { margin-top: 1rem; padding: .6rem 1.4rem; font-size: 1rem; display: none; }
+</style>
+</head>
+<body>
+<h1>Tris</h1>
+<div id="status">Connessione al broker...</div>
+<div id="stage">
+  <div id="board"></div>
+  <div id="overlay"></div>
+</div>
+<button id="again">Nuova partita</button>
+
+<script src="autobahn.min.js"></script>
+<script>
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const overlay = document.getElementById('overlay');
+const stage = document.getElementById('stage');
+const again = document.getElementById('again');
+const cells = [];
+let myTurn = false;
+
+for (let i = 1; i <= 9; i++) {
+  const b = document.createElement('button');
+  b.className = 'cell';
+  b.disabled = true;
+  b.onclick = () => play(i);
+  boardEl.appendChild(b);
+  cells[i] = b;
+}
+
+function setStatus(t) { statusEl.textContent = t; }
+
+function enableFree(on) {
+  myTurn = on;
+  cells.forEach(c => { if (c) c.disabled = !on || c.textContent !== ''; });
+}
+
+function mark(n, who, pending) {
+  cells[n].textContent = who;
+  cells[n].className = 'cell ' + who + (pending ? ' pending' : '');
+  cells[n].disabled = true;
+}
+
+function laurel() {
+  // corona di alloro: due rami di foglie ai lati di un cerchio
+  let leaves = '';
+  for (let s of [-1, 1]) {
+    for (let k = 0; k < 9; k++) {
+      const t = (25 + k * 15) * Math.PI / 180;           // dal basso verso l'alto
+      const x = 100 + s * 62 * Math.sin(t);
+      const y = 100 + 62 * Math.cos(t);
+      const tang = Math.atan2(-Math.sin(t), s * Math.cos(t)) * 180 / Math.PI; // tangente al cerchio
+      leaves += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="16" ry="6" fill="#4a9a3a" `
+              + `stroke="#2f6d24" transform="rotate(${(tang).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 200 200">${leaves}<text x="100" y="118" font-size="64" text-anchor="middle" fill="#c9a227">&#9733;</text></svg>`;
+}
+
+function showOutcome(html, gray) {
+  cells.forEach(c => { if (c) c.classList.remove('pending'); });
+  overlay.innerHTML = html;
+  overlay.classList.add('show');
+  stage.classList.toggle('gray', !!gray);
+  enableFree(false);
+  again.style.display = 'inline-block';
+}
+
+function reset() {
+  cells.forEach(c => { if (c) { c.textContent = ''; c.className = 'cell'; } });
+  overlay.classList.remove('show');
+  stage.classList.remove('gray');
+  again.style.display = 'none';
+  enableFree(true);
+  setStatus('Tocca a te (X): scegli una casella');
+}
+again.onclick = reset;
+
+let session;
+async function play(n) {
+  if (!myTurn) return;
+  enableFree(false);
+  mark(n, 'X', true);
+  setStatus('EDO-X sta posizionando la tua pedina...');
+  try {
+    await session.call('com.tris.moveX', [n]);
+  } catch (e) {
+    setStatus('Errore: ' + (e.error || e));
+    cells[n].textContent = ''; cells[n].className = 'cell';
+    enableFree(true);
+  }
+}
+
+const connection = new autobahn.Connection({
+  url: 'ws://' + location.host + '/ws',
+  realm: 'realm1'
+});
+
+connection.onopen = async (s) => {
+  session = s;
+  // l'agente (EDO-Y) ha finito di muovere: aggiorna il campo
+  await s.register('com.tris.movedY', (args) => {
+    const n = args[0];
+    mark(n, 'Y', false);
+    cells.forEach(c => { if (c) c.classList.remove('pending'); });
+    enableFree(true);
+    setStatus('Tocca a te (X): scegli una casella');
+    return true;
+  });
+  await s.subscribe('com.tris.winner_x', () => showOutcome(laurel(), false) || setStatus('Hai vinto!'));
+  await s.subscribe('com.tris.winner_y', () => showOutcome('', true) || setStatus('Ha vinto l\'agente (Y)'));
+  await s.subscribe('com.tris.flap', () => showOutcome('&#128077;', false) || setStatus('Patta!'));
+  reset();
+};
+connection.onclose = (reason) => { setStatus('Connessione persa: ' + reason); enableFree(false); };
+connection.open();
+</script>
+</body>
+</html>

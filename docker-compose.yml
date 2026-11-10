@@ -1,0 +1,47 @@
+services:
+  crossbar:
+    image: crossbario/crossbar:latest
+    ports:
+      - "${WINGRID_PORT:-8080}:8080"
+    volumes:
+      - ./broker/.crossbar:/node/.crossbar
+      - ./actor/wingrid:/node/web:ro   # WINGRID servito direttamente da crossbar
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8080), 2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  tris:
+    build: ./actor/tris
+
+  butler:
+    build: ./actor/butler
+    depends_on:
+      crossbar:
+        condition: service_healthy
+      tris:
+        condition: service_started
+    restart: on-failure
+    environment:
+      CROSSBAR_URL: ws://crossbar:8080/ws
+      TRIS_HOST: tris
+      TRIS_PORT: "5000"
+
+  edo-x:
+    build: ./actor/edo-x
+    depends_on:
+      crossbar:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      CROSSBAR_URL: ws://crossbar:8080/ws
+
+  edo-y:
+    build: ./actor/edo-y
+    depends_on:
+      crossbar:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      CROSSBAR_URL: ws://crossbar:8080/ws
