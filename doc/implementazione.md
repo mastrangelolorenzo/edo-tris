@@ -49,15 +49,25 @@ Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (6 contai
 
 Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 
+### Distribuzione su 2 host
+
+| Host | Attori | Profilo compose |
+|---|---|---|
+| pc1 (utente) | WINGRID (nginx, porta 8880), EDO-X | `pc1` |
+| pc2 | crossbar, BUTLER, EDO-Y, FRAME, TRIS | `pc2` |
+| unico | tutti | `all` (EDO-X diventa `edo-x-local`, che raggiunge il broker nella rete compose) |
+
+Gli unici collegamenti tra host sono: pc1 -> broker (WebSocket, dal browser e da EDO-X) e pc2 -> motore di gioco (TCP, da BUTLER). I loro indirizzi stanno in `config.json` (sezioni `broker` e `tris`), vedi [README](../README.md). WINGRID non e' piu' servita da crossbar ma da un nginx su pc1, che pubblica anche `config.json` perche' il browser sappia dove collegarsi.
+
 ## 3. Come avviare il test
 
 Prerequisito: Docker con Compose.
 
 ```
-docker compose up --build
+docker compose --profile all up --build
 ```
 
-Poi aprire WINGRID nel browser: **http://localhost:8080** oppure la porta impostata in `.env` (`WINGRID_PORT`, nel repo e' 8090: http://localhost:8090). Se la 8080 e' occupata da un altro progetto si ottiene la pagina "No Such Resource" di un altro crossbar: cambiare `WINGRID_PORT`.
+(per i due host: `--profile pc1` e `--profile pc2`, vedi README). Poi aprire WINGRID nel browser: **http://localhost:8880** (`WINGRID_PORT` in `.env`). Il broker e' pubblicato su `BROKER_PORT` (8090): se la porta e' occupata da un altro crossbar si ottiene "No Such Resource"; cambiare `BROKER_PORT` e `broker.port` in `config.json`.
 
 Svolgimento:
 
@@ -105,7 +115,7 @@ Mostra le sessioni collegate (una per WINGRID, EDO-X, EDO-Y, BUTLER).
 
 ### Chiamare il sistema senza interfaccia
 
-Si puo' simulare l'utente senza browser chiamando `com.tris.moveX` da un qualunque client WAMP sul realm `realm1` all'indirizzo `ws://localhost:<WINGRID_PORT>/ws`; il resto della catena si osserva nei log come sopra.
+Si puo' simulare l'utente senza browser chiamando `com.tris.moveX` da un qualunque client WAMP sul realm `realm1` all'indirizzo `ws://localhost:<BROKER_PORT>/ws`; il resto della catena si osserva nei log come sopra.
 
 ## 5. Limiti noti
 

@@ -5,14 +5,30 @@
 - se TRIS risponde con F/X/Y     -> pubblica com.tris.flap / winner_x / winner_y
 """
 import asyncio
+import json
 import os
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
 URL = os.environ.get("CROSSBAR_URL", "ws://crossbar:8080/ws")
 REALM = os.environ.get("CROSSBAR_REALM", "realm1")
-TRIS_HOST = os.environ.get("TRIS_HOST", "tris")
-TRIS_PORT = int(os.environ.get("TRIS_PORT", "5000"))
+
+
+def load_config():
+    """config.json: CONFIG_FILE, /app/config.json, oppure la radice del repo."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in (os.environ.get("CONFIG_FILE"), "/app/config.json",
+                 os.path.join(here, "..", "..", "config.json")):
+        if path and os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    return {}
+
+
+_tris = load_config().get("tris", {})
+# precedenza: variabile d'ambiente > config.json > default
+TRIS_HOST = os.environ.get("TRIS_HOST") or _tris.get("host", "tris")
+TRIS_PORT = int(os.environ.get("TRIS_PORT") or _tris.get("port", 5000))
 
 OUTCOME_TOPIC = {
     "F": "com.tris.flap",

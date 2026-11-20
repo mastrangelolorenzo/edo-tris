@@ -1,11 +1,25 @@
+# Profili:
+#   all  tutto su una sola macchina       docker compose --profile all up --build
+#   pc1  WINGRID + EDO-X (utente)         docker compose --profile pc1 up --build
+#   pc2  broker + tutto il resto          docker compose --profile pc2 up --build
+# Indirizzi di broker e motore di gioco: config.json (vedi README).
+
+x-edo-x: &edo-x
+  build: ./actor/edo-x
+  restart: on-failure
+  volumes:
+    - ./config.json:/app/config.json:ro
+
 services:
+  # ---------- pc2 (e all) ----------
   crossbar:
     image: crossbario/crossbar:latest
+    profiles: [pc2, all]
     ports:
-      - "${WINGRID_PORT:-8080}:8080"
+      - "${BROKER_PORT:-8080}:8080"
     volumes:
       - ./broker/.crossbar:/node/.crossbar
-      - ./actor/wingrid:/node/web:ro   # WINGRID servito direttamente da crossbar
+      - ./actor/wingrid:/node/web:ro   # WINGRID raggiungibile anche dal broker (senza config.json usa il suo host)
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8080), 2)"]
       interval: 2s
@@ -14,31 +28,23 @@ services:
 
   tris:
     build: ./actor/tris
+    profiles: [pc2, all]
 
   butler:
     build: ./actor/butler
-    depends_on:
-      crossbar:
-        condition: service_healthy
-      tris:
-        condition: service_started
-    restart: on-failure
-    environment:
-      CROSSBAR_URL: ws://crossbar:8080/ws
-      TRIS_HOST: tris
-      TRIS_PORT: "5000"
-
-  edo-x:
-    build: ./actor/edo-x
+    profiles: [pc2, all]
     depends_on:
       crossbar:
         condition: service_healthy
     restart: on-failure
+    volumes:
+      - ./config.json:/app/config.json:ro   # tris.host / tris.port
     environment:
       CROSSBAR_URL: ws://crossbar:8080/ws
 
   edo-y:
     build: ./actor/edo-y
+    profiles: [pc2, all]
     depends_on:
       crossbar:
         condition: service_healthy
@@ -48,11 +54,37 @@ services:
 
   frame:
     build: ./actor/frame
+    profiles: [pc2, all]
     depends_on:
       crossbar:
         condition: service_healthy
     restart: on-failure
     volumes:
       - ./actor/frame/field.json:/app/field.json:ro   # modificabile senza rebuild
+    environment:
+      CROSSBAR_URL: ws://crossbar:8080/ws
+
+  # ---------- pc1 (e all) ----------
+  wingrid:
+    image: nginx:alpine
+    profiles: [pc1, all]
+    ports:
+      - "${WINGRID_PORT:-8880}:80"
+    volumes:
+      - ./actor/wingrid:/usr/share/nginx/html:ro
+      - ./config.json:/usr/share/nginx/html/config.json:ro   # il browser legge broker.host / broker.port
+
+  # pc1: raggiunge il broker all'indirizzo di config.json
+  edo-x:
+    <<: *edo-x
+    profiles: [pc1]
+
+  # all: il broker e' nella stessa rete compose
+  edo-x-local:
+    <<: *edo-x
+    profiles: [all]
+    depends_on:
+      crossbar:
+        condition: service_healthy
     environment:
       CROSSBAR_URL: ws://crossbar:8080/ws

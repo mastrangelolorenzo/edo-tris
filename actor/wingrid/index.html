@@ -116,12 +116,28 @@ async function play(n) {
   }
 }
 
-const connection = new autobahn.Connection({
-  url: 'ws://' + location.host + '/ws',
-  realm: 'realm1'
+// indirizzo del broker: config.json (broker.host / broker.port / broker.realm);
+// se assente, il broker e' chi serve la pagina.
+async function loadBroker() {
+  try {
+    const r = await fetch('config.json', { cache: 'no-store' });
+    if (r.ok) {
+      const b = (await r.json()).broker || {};
+      if (b.host) return { url: `ws://${b.host}:${b.port || 8080}/ws`, realm: b.realm || 'realm1' };
+    }
+  } catch (e) { /* ripiega sull'host della pagina */ }
+  return { url: 'ws://' + location.host + '/ws', realm: 'realm1' };
+}
+
+loadBroker().then(b => {
+  setStatus('Connessione al broker ' + b.url + ' ...');
+  const connection = new autobahn.Connection({ url: b.url, realm: b.realm });
+  connection.onopen = onOpen;
+  connection.onclose = (reason) => { setStatus('Connessione persa: ' + reason); enableFree(false); };
+  connection.open();
 });
 
-connection.onopen = async (s) => {
+const onOpen = async (s) => {
   session = s;
   // l'agente (EDO-Y) ha finito di muovere: aggiorna il campo
   await s.register('com.tris.movedY', (args) => {
@@ -137,8 +153,6 @@ connection.onopen = async (s) => {
   await s.subscribe('com.tris.flap', () => showOutcome('&#128077;', false) || setStatus('Patta!'));
   reset();
 };
-connection.onclose = (reason) => { setStatus('Connessione persa: ' + reason); enableFree(false); };
-connection.open();
 </script>
 </body>
 </html>

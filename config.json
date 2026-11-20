@@ -1,0 +1,12 @@
+{
+  "_nota": "Config di rete. I default funzionano per l'avvio in blocco (profilo 'all'). Per l'avvio su 2 host: su pc1 imposta broker.host/port = indirizzo e porta (NAT di pc2) del broker; su pc2 imposta tris.host/port = indirizzo e porta del motore di gioco.",
+  "broker": {
+    "host": "localhost",
+    "port": 8090,
+    "realm": "realm1"
+  },
+  "tris": {
+    "host": "tris",
+    "port": 5000
+  }
+}

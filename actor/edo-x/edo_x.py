@@ -8,12 +8,29 @@ La classe Arm simula il robot e.DO: per pilotare quello reale basta
 implementare i metodi con le chiamate dell'SDK (vedi EDO_IP).
 """
 import asyncio
+import json
 import os
 
 from autobahn.asyncio.wamp import ApplicationRunner, ApplicationSession
 
-URL = os.environ.get("CROSSBAR_URL", "ws://crossbar:8080/ws")
-REALM = os.environ.get("CROSSBAR_REALM", "realm1")
+
+
+def load_config():
+    """config.json: CONFIG_FILE, /app/config.json, oppure la radice del repo."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in (os.environ.get("CONFIG_FILE"), "/app/config.json",
+                 os.path.join(here, "..", "..", "config.json")):
+        if path and os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    return {}
+
+
+_broker = load_config().get("broker", {})
+# precedenza: variabile d'ambiente > config.json > default
+URL = os.environ.get("CROSSBAR_URL") or \
+    f"ws://{_broker.get('host', 'crossbar')}:{_broker.get('port', 8080)}/ws"
+REALM = os.environ.get("CROSSBAR_REALM") or _broker.get("realm", "realm1")
 EDO_IP = os.environ.get("EDO_IP", "")  # IP del robot reale (vuoto = simulato)
 NAME = "EDO-X"
 PIECES = 5
