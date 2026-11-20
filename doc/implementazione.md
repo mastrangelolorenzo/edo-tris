@@ -1,6 +1,6 @@
 # Report di implementazione
 
-Realizzazione di quanto descritto in [requisiti.md](requisiti.md): una partita a Tris tra un utente e un agente IA (simulato), giocata fisicamente da due bracci robotici e.DO (simulati).
+Realizzazione di quanto descritto in [README.md](README.md): una partita a Tris tra un utente e un agente IA (simulato), giocata fisicamente da due bracci robotici e.DO (simulati).
 
 ## 1. Elementi in gioco
 

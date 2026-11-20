@@ -1,6 +1,6 @@
 # etdo-tris
 
-Partita a Tris umano vs. agente IA giocata da due bracci robotici e.DO. Specifiche in [doc/requisiti.md](doc/requisiti.md).
+Partita a Tris umano vs. agente IA giocata da due bracci robotici e.DO. Specifiche in [doc/README.md](doc/README.md), implementazione in [doc/implementazione.md](doc/implementazione.md).
 
 ## Avvio
 

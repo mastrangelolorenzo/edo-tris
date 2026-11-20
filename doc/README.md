@@ -1,5 +1,7 @@
 # Analisi dei requisiti
 
+L'implementazione di quanto descritto qui (architettura, distribuzione su 2 host, coordinate locali dei bracci, avvio e test) e' documentata in [implementazione.md](implementazione.md).
+
 Il presente progetto mira allo sviluppo di un sistema software distribuito per la gestione di una partita a Tris tra un utente umano e un agente di intelligenza artificiale. L'interazione fisica sul campo di gioco è interamente affidata a due bracci robotici e.DO
 
 Gli attori in gioco sono:
