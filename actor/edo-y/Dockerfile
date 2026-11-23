@@ -6,5 +6,5 @@ WORKDIR /app
 COPY edo-common/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
  && pip install --no-cache-dir --no-deps pynput==1.8.1
-COPY edo-common/edo.py edo-y/edo_y.py ./
+COPY edo-common/edo.py edo-common/teach.py edo-y/edo_y.py ./
 CMD ["python", "-u", "edo_y.py"]

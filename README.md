@@ -16,6 +16,8 @@ Senza `--profile` non parte nulla. WINGRID: http://localhost:8880 (su pc1 o, con
 
 Su Windows si puo' fare doppio clic: `avvia-pc2.bat` (avvia pc2 e mostra l'IP da mettere in `broker.host` sul pc1), poi `avvia-pc1.bat` (avvia pc1 e apre WINGRID a schermo intero in Edge; Alt+F4 per uscire).
 
+**Setup dei bracci** (la prima volta, o quando si sposta qualcosa): con il pc2 avviato, `setup-pc2.bat` sul pc2 e `setup-pc1.bat` sul pc1, ognuno per il robot collegato a lui. Si muove la pinza con l'app e.DO e a ogni passo si preme Invio: le 9 caselle, le 5 pedine, poi le altezze di presa, rilascio e sicurezza. Lo script (`actor/edo-common/teach.py`) non muove il robot: legge la posa da rosbridge (`/cartesian_pose`). Caselle e pedine vanno a FRAME con `com.tris.saveArm`, che le scrive in `field.json` nel formato di sempre; le quote vanno nel `config.json` del pc del robot.
+
 ### config.json
 
 ```json

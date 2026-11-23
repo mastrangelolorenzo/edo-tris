@@ -167,10 +167,15 @@ class EdoSession(ApplicationSession):
         self.used = 0
 
 
-def run(me):
+def broker_address():
     broker = load_config().get("broker", {})
     # precedenza: variabile d'ambiente > config.json > default
     url = os.environ.get("CROSSBAR_URL") or \
         f"ws://{broker.get('host', 'crossbar')}:{broker.get('port', 8080)}/ws"
     realm = os.environ.get("CROSSBAR_REALM") or broker.get("realm", "realm1")
+    return url, realm
+
+
+def run(me):
+    url, realm = broker_address()
     ApplicationRunner(url=url, realm=realm, extra={"me": me}).run(EdoSession)

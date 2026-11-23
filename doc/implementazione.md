@@ -31,6 +31,7 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
   | `com.tris.movedY(n)` | WINGRID | EDO-Y |
   | `com.tris.localCell(arm, n)` | FRAME | EDO-X, EDO-Y |
   | `com.tris.localPiece(arm, n)` | FRAME | EDO-X, EDO-Y |
+  | `com.tris.saveArm(arm, cells, pieces)` | FRAME | setup (`teach.py`) |
 
   | Topic | Pubblicato da | Sottoscritto da |
   |---|---|---|
@@ -50,6 +51,8 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
 ### Coordinate locali (FRAME)
 
 `actor/frame/field.json` contiene, in coordinate **globali** (mm): le 9 celle, e per ogni braccio le sue pedine e i 3 punti fissi `origin`, `left`, `right`. Convenzione: asse x locale = direzione left -> right; asse y locale = x ruotato di 90 gradi antiorario (in avanti, visto dal braccio rivolto al campo); origine locale = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
+
+Di solito lo scrive il setup (`setup-pc1.bat` / `setup-pc2.bat`, cioe' `teach.py`): per ogni braccio legge dal robot le 9 caselle e le 5 pedine nelle coordinate della sua base e le manda a FRAME (`com.tris.saveArm`). FRAME prende come piano globale quello del braccio appena insegnato (sue celle = celle del campo, suo `origin` = [0, 0]) e riposiziona l'altro braccio facendo combaciare ai minimi quadrati le sue celle con quelle nuove, quindi dopo il setup di entrambi i bracci ognuno torna sui propri punti, a meno dello scarto stampato a fine setup. FRAME scarta punti mancanti, non numerici o oltre la portata di e.DO (480 mm).
 
 Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 
