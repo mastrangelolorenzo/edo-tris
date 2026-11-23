@@ -44,6 +44,7 @@ class Robot:
         self.safe_z = settings.get("safe_z", 150)
         self.pick_z = settings.get("pick_z", 20)
         self.place_z = settings.get("place_z", 25)
+        self.orientation = tuple(settings.get("orientation", self.ORIENTATION))
         self.home()
 
     def home(self):
@@ -72,7 +73,7 @@ class Robot:
 
     def _move(self, xy, z):
         # piano locale di FRAME: x verso destra, y in avanti; base e.DO: x in avanti, y a sinistra
-        self.edo.moveCartesian(xy[1], -xy[0], z, *self.ORIENTATION)
+        self.edo.moveCartesian(xy[1], -xy[0], z, *self.orientation)
 
     def _gesture(self, poses):
         for pose in poses:
