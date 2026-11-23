@@ -54,6 +54,9 @@ class FieldTest(unittest.TestCase):
                     self.assertAlmostEqual(a, b)
 
 
+PIECES_OK = {str(n): [100, 50 * n] for n in range(1, 6)}
+
+
 class CheckArmTest(unittest.TestCase):
     PIECES = {str(n): [100, 50 * n] for n in range(1, 6)}
 
@@ -69,6 +72,8 @@ class CheckArmTest(unittest.TestCase):
             ({"center": [300, 0], "cell_1": [400, "x"]}, self.PIECES),
             ({"center": [300, 0], "cell_1": [400, 100, 5]}, self.PIECES),
             ({"center": [300, 0], "cell_1": [99999, 100]}, self.PIECES),
+            ({"center": [400, 0], "cell_1": [400, 100]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [400, 100]}, {**PIECES_OK, "3": [0, 500]}),
             ({"center": [300, 0], "cell_1": [400, 100]}, {"1": [1, 2]}),
         ]
         for grid, pieces in bad:

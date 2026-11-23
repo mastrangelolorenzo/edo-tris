@@ -68,6 +68,9 @@ def global_cells(config):
     return grid_cells(config["grid"]["center"], config["grid"]["cell_1"])
 
 
+REACH = 480  # portata massima dichiarata di e.DO, in mm
+
+
 def check_arm(grid, pieces):
     """Punti di un braccio inviati da teach.py: il broker e' aperto, quindi si validano."""
     try:
@@ -76,10 +79,14 @@ def check_arm(grid, pieces):
         clean = {k: [float(p[0]), float(p[1])] for k, p in points.items() if len(p) == 2}
     except (KeyError, TypeError, ValueError, IndexError):
         raise ValueError("servono grid.center, grid.cell_1 e le pedine 1-5, ciascuno [x, y]")
-    if len(clean) != len(points) or not all(abs(v) < 2000 for p in clean.values() for v in p):
-        raise ValueError("ogni punto deve essere [x, y] in mm, entro 2 m dalla base")
+    if len(clean) != len(points):
+        raise ValueError("ogni punto deve essere [x, y] in mm")
     if clean["center"] == clean["cell_1"]:
         raise ValueError("center e cell_1 coincidono")
+    cells = grid_cells(edo_to_local(clean["center"]), edo_to_local(clean["cell_1"]))
+    targets = [*cells.values(), *(clean[str(n)] for n in range(1, 6))]
+    if not all(math.hypot(*t) <= REACH for t in targets):
+        raise ValueError(f"caselle e pedine devono stare entro {REACH} mm dalla base (portata e.DO)")
     return {"grid": {"center": clean["center"], "cell_1": clean["cell_1"]},
             "pieces": {str(n): clean[str(n)] for n in range(1, 6)}}
 
