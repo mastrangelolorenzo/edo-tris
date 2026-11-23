@@ -3,7 +3,7 @@ import unittest
 import json
 import os
 
-from frame import Field, grid_cells
+from frame import Field, check_arm, grid_cells
 
 EXPLICIT = {
     1: (200, 400), 2: (300, 400), 3: (400, 400),
@@ -52,6 +52,28 @@ class FieldTest(unittest.TestCase):
             for n in (1, 5):
                 for a, b in zip(local.local_piece(arm, n), measured.local_piece(arm, n)):
                     self.assertAlmostEqual(a, b)
+
+
+class CheckArmTest(unittest.TestCase):
+    PIECES = {str(n): [100, 50 * n] for n in range(1, 6)}
+
+    def test_accepts_valid_points(self):
+        arm = check_arm({"center": [300, 0], "cell_1": [400, 100]}, self.PIECES)
+        self.assertEqual(arm["grid"]["cell_1"], [400.0, 100.0])
+        self.assertEqual(arm["pieces"]["5"], [100.0, 250.0])
+
+    def test_rejects_bad_points(self):
+        bad = [
+            ({"center": [300, 0]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [300, 0]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [400, "x"]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [400, 100, 5]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [99999, 100]}, self.PIECES),
+            ({"center": [300, 0], "cell_1": [400, 100]}, {"1": [1, 2]}),
+        ]
+        for grid, pieces in bad:
+            with self.assertRaises(ValueError):
+                check_arm(grid, pieces)
 
 
 if __name__ == "__main__":

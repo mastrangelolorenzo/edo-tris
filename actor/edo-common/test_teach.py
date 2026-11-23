@@ -4,8 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frame"))
 
-from frame import Field
-from teach import apply_poses
+from frame import Field, check_arm
+from teach import apply_settings, arm_points
 
 POSES = {
     "center": [300, 0, 120, 1, 179, 2],
@@ -19,9 +19,10 @@ POSES = {
 
 class ApplyPosesTest(unittest.TestCase):
     def setUp(self):
-        self.field = {"arms": {"EDO-Y": {"grid": {"center": [1, 2], "cell_1": [3, 4]}, "pieces": {}}}}
+        grid, pieces = arm_points(POSES)
+        self.field = {"arms": {"EDO-X": check_arm(grid, pieces)}}
         self.config = {"edo": {"EDO-X": {"ip": "10.42.0.49", "speed": 30}}}
-        apply_poses(self.field, self.config, "EDO-X", POSES)
+        apply_settings(self.config, "EDO-X", POSES)
 
     def test_writes_grid_pieces_and_heights(self):
         arm = self.field["arms"]["EDO-X"]
@@ -32,7 +33,6 @@ class ApplyPosesTest(unittest.TestCase):
         self.assertEqual(settings["ip"], "10.42.0.49")
         self.assertEqual((settings["pick_z"], settings["place_z"], settings["safe_z"]), (18.0, 26, 160))
         self.assertEqual(settings["orientation"], [1, 179, 2])
-        self.assertIn("EDO-Y", self.field["arms"])
 
     def test_robot_goes_back_to_taught_points(self):
         import edo

@@ -68,6 +68,22 @@ def global_cells(config):
     return grid_cells(config["grid"]["center"], config["grid"]["cell_1"])
 
 
+def check_arm(grid, pieces):
+    """Punti di un braccio inviati da teach.py: il broker e' aperto, quindi si validano."""
+    try:
+        points = {"center": grid["center"], "cell_1": grid["cell_1"],
+                  **{str(n): pieces[str(n)] for n in range(1, 6)}}
+        clean = {k: [float(p[0]), float(p[1])] for k, p in points.items() if len(p) == 2}
+    except (KeyError, TypeError, ValueError, IndexError):
+        raise ValueError("servono grid.center, grid.cell_1 e le pedine 1-5, ciascuno [x, y]")
+    if len(clean) != len(points) or not all(abs(v) < 2000 for p in clean.values() for v in p):
+        raise ValueError("ogni punto deve essere [x, y] in mm, entro 2 m dalla base")
+    if clean["center"] == clean["cell_1"]:
+        raise ValueError("center e cell_1 coincidono")
+    return {"grid": {"center": clean["center"], "cell_1": clean["cell_1"]},
+            "pieces": {str(n): clean[str(n)] for n in range(1, 6)}}
+
+
 class Field:
     """Celle e pedine di ogni braccio nelle sue coordinate locali.
 

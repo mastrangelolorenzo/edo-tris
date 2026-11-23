@@ -31,6 +31,7 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
   | `com.tris.movedY(n)` | WINGRID | EDO-Y |
   | `com.tris.localCell(arm, n)` | FRAME | EDO-X, EDO-Y |
   | `com.tris.localPiece(arm, n)` | FRAME | EDO-X, EDO-Y |
+  | `com.tris.saveArm(arm, grid, pieces)` | FRAME | teach.py (setup) |
 
   | Topic | Pubblicato da | Sottoscritto da |
   |---|---|---|
@@ -49,7 +50,7 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
 
 ### Coordinate locali (FRAME)
 
-`actor/frame/field.json` contiene, per ogni braccio, le coordinate X, Y (mm) **lette dall'app e.DO**: si porta la pinza sopra il punto con il movimento manuale e si copiano le cartesiane (X in avanti, Y a sinistra). Servono `grid` (centro della casella 5 e centro della casella 1; le altre 7 celle sono calcolate, griglia quadrata) e `pieces` (le 5 pedine da prendere). Niente metro e niente punto zero comune: ogni braccio si sposta reinsegnando solo i suoi punti, e le piccole imprecisioni del robot sono gia' comprese. FRAME restituisce comunque il piano locale (x a destra, y in avanti), che EDO-X/EDO-Y riconvertono per `moveCartesian`. Con lo stesso metodo conviene leggere la Z con la pinza all'altezza di presa e di rilascio e usarla per `pick_z` e `place_z`, e copiare gli angoli A, E, R della pinza rivolta in basso in `config.json -> edo.<braccio>.orientation` (default `[0, 180, 0]`). Resta supportato il formato globale (`cells` o `grid` alla radice, e per ogni braccio `origin`, `left`, `right` e pedine in coordinate del tavolo): x locale = direzione left -> right, y locale = x ruotato di 90 gradi antiorario, origine = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
+`actor/frame/field.json` contiene, per ogni braccio, le coordinate X, Y (mm) **lette dal robot** (X in avanti, Y a sinistra), di solito con `setup-pc1.bat` / `setup-pc2.bat` (`teach.py`, vedi README), che le invia a FRAME con `com.tris.saveArm`; FRAME le valida e le scrive nel file. Servono `grid` (centro della casella 5 e centro della casella 1; le altre 7 celle sono calcolate, griglia quadrata) e `pieces` (le 5 pedine da prendere). Niente metro e niente punto zero comune: ogni braccio si sposta reinsegnando solo i suoi punti, e le piccole imprecisioni del robot sono gia' comprese. FRAME restituisce comunque il piano locale (x a destra, y in avanti), che EDO-X/EDO-Y riconvertono per `moveCartesian`. Con lo stesso metodo conviene leggere la Z con la pinza all'altezza di presa e di rilascio e usarla per `pick_z` e `place_z`, e copiare gli angoli A, E, R della pinza rivolta in basso in `config.json -> edo.<braccio>.orientation` (default `[0, 180, 0]`). Resta supportato il formato globale (`cells` o `grid` alla radice, e per ogni braccio `origin`, `left`, `right` e pedine in coordinate del tavolo): x locale = direzione left -> right, y locale = x ruotato di 90 gradi antiorario, origine = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
 
 Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 

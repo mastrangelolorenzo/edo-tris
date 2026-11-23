@@ -30,15 +30,16 @@ Senza `--profile` non parte nulla. WINGRID: http://localhost:8880 (su pc1 o, con
 - Il file e' montato come volume: dopo una modifica basta riavviare i container (`docker compose --profile ... restart`), senza rebuild.
 - Le variabili d'ambiente `CROSSBAR_URL`, `CROSSBAR_REALM`, `TRIS_HOST`, `TRIS_PORT`, `EDO_IP` hanno la precedenza su `config.json`.
 
-### Insegnare i punti ai bracci
+### Su due PC con i file .bat
 
-Griglia, pedine, quote e orientamento si leggono dal robot: con l'IP del braccio in `config.json`, si lancia
+| PC | Prima | Avvio | Setup (una volta, o quando si sposta qualcosa) |
+|---|---|---|---|
+| PC2 (AI) | `config.json`: `edo.EDO-Y.ip` | `avvia-pc2.bat` (mostra l'IP da dare al PC1) | `setup-pc2.bat` |
+| PC1 (giocatore) | `config.json`: `broker.host` = IP del PC2, `edo.EDO-X.ip` | `avvia-pc1.bat` (apre il gioco a schermo intero in Edge; Alt+F4 per uscire) | `setup-pc1.bat` |
 
-```
-docker compose run --rm --no-deps -v .:/repo -e CONFIG_FILE=/repo/config.json -e FIELD_FILE=/repo/actor/frame/field.json edo-y python teach.py EDO-X
-```
+Si avvia prima il PC2, poi il PC1. Sul PC2 il firewall di Windows deve lasciar entrare la porta del broker (`BROKER_PORT`, 8090).
 
-(`EDO-Y` per l'altro braccio). Lo script non muove il robot: si sposta la pinza con l'app e.DO e a ogni passo si preme Invio (casella 5, casella 1, pedine 1-5, altezza di presa, di rilascio, di sicurezza). Alla fine scrive `actor/frame/field.json` e `config.json`; poi `docker compose --profile ... restart` per far rileggere `config.json` ai bracci. Senza Docker: da `actor/edo-common`, `pip install roslibpy` e `python teach.py EDO-X`.
+Il setup insegna i punti al robot collegato a quel PC con `actor/edo-common/teach.py`: si muove la pinza con l'app e.DO e a ogni passo si preme Invio (casella 5, casella 1, pedine 1-5, altezza di presa, di rilascio, di sicurezza). Lo script non muove il robot: legge la posa da rosbridge (`/cartesian_pose`). Griglia e pedine vanno a FRAME con `com.tris.saveArm`, che le scrive in `actor/frame/field.json` anche se FRAME e' sull'altro PC; quote e orientamento vanno nel `config.json` del PC del robot. Senza i .bat: `docker compose --profile pc2 run --rm --no-deps -v .:/repo -e CONFIG_FILE=/repo/config.json edo-y python teach.py EDO-Y`.
 
 ### Porte (`.env`)
 
