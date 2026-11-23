@@ -49,7 +49,7 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
 
 ### Coordinate locali (FRAME)
 
-`actor/frame/field.json` contiene, in coordinate **globali** (mm): le 9 celle, e per ogni braccio le sue pedine e i 3 punti fissi `origin`, `left`, `right`. Convenzione: asse x locale = direzione left -> right; asse y locale = x ruotato di 90 gradi antiorario (in avanti, visto dal braccio rivolto al campo); origine locale = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
+`actor/frame/field.json` contiene, in coordinate **globali** (mm): la griglia (`grid`: centro della casella 5 e centro della casella 1, in alto a sinistra con x verso destra e y in avanti; le altre 7 celle sono calcolate, griglia quadrata; in alternativa si possono elencare tutte e 9 in `cells`), e per ogni braccio le sue pedine e i 3 punti fissi `origin`, `left`, `right`. Convenzione: asse x locale = direzione left -> right; asse y locale = x ruotato di 90 gradi antiorario (in avanti, visto dal braccio rivolto al campo); origine locale = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
 
 Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 

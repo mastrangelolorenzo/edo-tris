@@ -39,11 +39,27 @@ class Frame:
                 self.origin[1] + point[0] * self.ux[1] + point[1] * self.uy[1])
 
 
+def grid_cells(center, cell_1):
+    """Le 9 celle di una griglia quadrata dal centro (casella 5) e dal centro della casella 1.
+
+    Con x verso destra e y in avanti, la 1 e' in alto a sinistra, la 2 alla sua destra, la 4 sotto.
+    """
+    wx, wy = center[0] - cell_1[0], center[1] - cell_1[1]
+    right = ((wx - wy) / 2, (wx + wy) / 2)
+    down = ((wx + wy) / 2, (wy - wx) / 2)
+    return {n: (cell_1[0] + (n - 1) % 3 * right[0] + (n - 1) // 3 * down[0],
+                cell_1[1] + (n - 1) % 3 * right[1] + (n - 1) // 3 * down[1])
+            for n in range(1, 10)}
+
+
 class Field:
     """Configurazione: celle e pedine nel piano globale, bracci con i loro 3 punti."""
 
     def __init__(self, config):
-        self.cells = {int(k): tuple(v) for k, v in config["cells"].items()}
+        if "cells" in config:
+            self.cells = {int(k): tuple(v) for k, v in config["cells"].items()}
+        else:
+            self.cells = grid_cells(config["grid"]["center"], config["grid"]["cell_1"])
         self.arms = {}
         for name, arm in config["arms"].items():
             self.arms[name] = {
