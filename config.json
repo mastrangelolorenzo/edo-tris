@@ -1,5 +1,5 @@
 {
-  "_nota": "Config di rete. I default funzionano per l'avvio in blocco (profilo 'all'). Per l'avvio su 2 host: su pc1 imposta broker.host/port = indirizzo e porta (NAT di pc2) del broker; su pc2 imposta tris.host/port = indirizzo e porta del motore di gioco.",
+  "_nota": "Config di rete e dei robot. I default funzionano per l'avvio in blocco (profilo 'all') con bracci simulati. Per l'avvio su 2 host: su pc1 imposta broker.host/port = indirizzo e porta (NAT di pc2) del broker; su pc2 imposta tris.host/port = indirizzo e porta del motore di gioco. edo.<braccio>.ip vuoto = braccio simulato.",
   "broker": {
     "host": "localhost",
     "port": 8090,
@@ -8,5 +8,9 @@
   "tris": {
     "host": "tris",
     "port": 5000
+  },
+  "edo": {
+    "EDO-X": {"ip": "", "speed": 30, "safe_z": 150, "pick_z": 20, "place_z": 25},
+    "EDO-Y": {"ip": "", "speed": 30, "safe_z": 150, "pick_z": 20, "place_z": 25}
   }
 }

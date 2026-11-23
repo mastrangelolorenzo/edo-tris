@@ -18,14 +18,17 @@ Senza `--profile` non parte nulla. WINGRID: http://localhost:8880 (su pc1 o, con
 
 ```json
 { "broker": {"host": "localhost", "port": 8090, "realm": "realm1"},
-  "tris":   {"host": "tris",      "port": 5000} }
+  "tris":   {"host": "tris",      "port": 5000},
+  "edo":    {"EDO-X": {"ip": "", "speed": 30, "safe_z": 150, "pick_z": 20, "place_z": 25},
+             "EDO-Y": {"ip": "", "speed": 30, "safe_z": 150, "pick_z": 20, "place_z": 25}} }
 ```
 
 - **pc1** usa `broker.host` / `broker.port`: indirizzo e porta (NAT di pc2) del broker. Li leggono sia il browser (WINGRID) sia EDO-X.
 - **pc2** usa `tris.host` / `tris.port`: dove BUTLER trova il motore di gioco. `tris` = il TRIS simulato nello stesso compose; per il motore vero, il suo IP e la sua porta.
-- I default (`localhost:8090`, `tris:5000`) sono quelli dell'avvio in blocco.
+- **edo** configura i bracci: `ip` vuoto = braccio simulato (solo log); con l'IP del robot (`192.168.12.1` via Wi-Fi, `10.42.0.49` via cavo) l'attore lo pilota con l'SDK `pyedo`. `speed` e' la velocita' in percentuale, `safe_z` / `pick_z` / `place_z` le quote in mm per spostarsi, prendere e posare la pedina. EDO-X legge la sezione su pc1, EDO-Y su pc2.
+- I default (`localhost:8090`, `tris:5000`, bracci simulati) sono quelli dell'avvio in blocco.
 - Il file e' montato come volume: dopo una modifica basta riavviare i container (`docker compose --profile ... restart`), senza rebuild.
-- Le variabili d'ambiente `CROSSBAR_URL`, `CROSSBAR_REALM`, `TRIS_HOST`, `TRIS_PORT` hanno la precedenza su `config.json`.
+- Le variabili d'ambiente `CROSSBAR_URL`, `CROSSBAR_REALM`, `TRIS_HOST`, `TRIS_PORT`, `EDO_IP` hanno la precedenza su `config.json`.
 
 ### Porte (`.env`)
 
@@ -40,7 +43,8 @@ Su pc1 e pc2 serve aprire/inoltrare la porta del broker verso pc1. All'avvio EDO
 | `actor/wingrid` | interfaccia web (html+js, autobahn), servita da nginx su pc1 |
 | `actor/frame` | conversione coordinate globali -> locali dei bracci |
 | `config.json` | indirizzi di broker e motore di gioco |
-| `actor/edo-x`, `actor/edo-y` | bracci robotici (python, simulati dalla classe `Arm`) |
+| `actor/edo-x`, `actor/edo-y` | bracci robotici (python): entry point dei due attori |
+| `actor/edo-common` | codice comune dei bracci: sessione WAMP, braccio reale (`pyedo`) o simulato |
 | `actor/butler` | ponte tra crossbar e TRIS |
 | `actor/tris` | motore di gioco simulato (TCP, porta 5000) |
 | `broker/.crossbar` | configurazione crossbar.io (realm `realm1`) |
@@ -48,6 +52,6 @@ Su pc1 e pc2 serve aprire/inoltrare la porta del broker verso pc1. All'avvio EDO
 ## Messaggi WAMP
 
 RPC: `com.tris.moveX` (WINGRID -> EDO-X), `com.tris.movedX` (EDO-X -> BUTLER), `com.tris.moveY` (BUTLER -> EDO-Y), `com.tris.movedY` (EDO-Y -> WINGRID).
-Topic: `com.tris.flap`, `com.tris.winner_x`, `com.tris.winner_y`.
+Topic: `com.tris.flap`, `com.tris.winner_x`, `com.tris.winner_y` (con argomento `n` se la partita e' chiusa dalla mossa `n` di Y), `com.tris.new_game` (WINGRID -> BUTLER, EDO-X, EDO-Y).
 
-Protocollo TRIS (una riga per messaggio): ricevi `1..9`; rispondi `1..9` oppure `F`/`X`/`Y`.
+Protocollo TRIS (una riga per messaggio): ricevi `1..9`; rispondi `1..9` (mossa di Y), `X`/`F` (la mossa dell'umano chiude la partita), `n Y`/`n F` (la mossa `n` di Y chiude la partita) oppure `ERR`. Ogni connessione TCP e' una partita: per una nuova partita BUTLER si ricollega.

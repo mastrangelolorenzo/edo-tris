@@ -5,10 +5,12 @@
 # Indirizzi di broker e motore di gioco: config.json (vedi README).
 
 x-edo-x: &edo-x
-  build: ./actor/edo-x
+  build:
+    context: ./actor
+    dockerfile: edo-x/Dockerfile
   restart: on-failure
   volumes:
-    - ./config.json:/app/config.json:ro
+    - ./config.json:/app/config.json:ro   # broker + edo.EDO-X (IP e quote del robot)
 
 services:
   # ---------- pc2 (e all) ----------
@@ -43,12 +45,16 @@ services:
       CROSSBAR_URL: ws://crossbar:8080/ws
 
   edo-y:
-    build: ./actor/edo-y
+    build:
+      context: ./actor
+      dockerfile: edo-y/Dockerfile
     profiles: [pc2, all]
     depends_on:
       crossbar:
         condition: service_healthy
     restart: on-failure
+    volumes:
+      - ./config.json:/app/config.json:ro   # edo.EDO-Y (IP e quote del robot)
     environment:
       CROSSBAR_URL: ws://crossbar:8080/ws
 
@@ -71,7 +77,9 @@ services:
     ports:
       - "${WINGRID_PORT:-8880}:80"
     volumes:
-      - ./actor/wingrid:/usr/share/nginx/html:ro
+      # file singoli: config.json non si puo' montare dentro una cartella montata in sola lettura
+      - ./actor/wingrid/index.html:/usr/share/nginx/html/index.html:ro
+      - ./actor/wingrid/autobahn.min.js:/usr/share/nginx/html/autobahn.min.js:ro
       - ./config.json:/usr/share/nginx/html/config.json:ro   # il browser legge broker.host / broker.port
 
   # pc1: raggiunge il broker all'indirizzo di config.json

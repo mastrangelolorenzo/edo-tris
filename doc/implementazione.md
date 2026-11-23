@@ -1,6 +1,6 @@
 # Report di implementazione
 
-Realizzazione di quanto descritto in [README.md](README.md): una partita a Tris tra un utente e un agente IA (simulato), giocata fisicamente da due bracci robotici e.DO (simulati).
+Realizzazione di quanto descritto in [README.md](README.md): una partita a Tris tra un utente e un agente IA (simulato), giocata fisicamente da due bracci robotici e.DO (reali tramite l'SDK `pyedo`, oppure simulati se non e' configurato il loro IP).
 
 ## 1. Elementi in gioco
 
@@ -8,13 +8,13 @@ Realizzazione di quanto descritto in [README.md](README.md): una partita a Tris 
 
 | Elemento | Cartella | Tecnologia | Ruolo |
 |---|---|---|---|
-| **WINGRID** | `actor/wingrid` | HTML + JavaScript, `autobahn.min.js` (incluso nel repo) | Mostra il campo, raccoglie la mossa dell'utente, mostra l'esito (corona di alloro, grigio, pollice in su). Servito da un nginx su pc1; legge l'indirizzo del broker da `config.json`. |
+| **WINGRID** | `actor/wingrid` | HTML + JavaScript, `autobahn.min.js` (incluso nel repo) | Mostra il campo (X dell'umano, cerchio dell'agente), raccoglie la mossa dell'utente, traccia la linea vincente e mostra l'esito (corona di alloro, grigio, pollice in su). Servito da un nginx su pc1; legge l'indirizzo del broker da `config.json`. |
 | **BROCKER** | `broker/.crossbar` | crossbar.io (immagine `crossbario/crossbar`) | Router WAMP: instrada chiamate (RPC) e messaggi (pub/sub) tra gli attori. Un solo realm, `realm1`, ruolo `anonymous` con tutti i permessi. |
-| **EDO-X** | `actor/edo-x` | Python 3.12, autobahn (asyncio) | Braccio dell'umano. Esegue `moveX`: chiede a FRAME le coordinate locali di pedina e cella, sposta la pedina, poi chiama `movedX`. Reagisce agli esiti. |
-| **EDO-Y** | `actor/edo-y` | Python 3.12, autobahn (asyncio) | Braccio dell'agente. Esegue `moveY` (stessa sequenza con FRAME), poi chiama `movedY`. Reazioni opposte a EDO-X (tranne la patta). |
+| **EDO-X** | `actor/edo-x` | Python 3.12, autobahn (asyncio), `pyedo` | Braccio dell'umano. Esegue `moveX`: chiede a FRAME le coordinate locali di pedina e cella, sposta la pedina, poi chiama `movedX`. Reagisce agli esiti. |
+| **EDO-Y** | `actor/edo-y` | Python 3.12, autobahn (asyncio), `pyedo` | Braccio dell'agente. Esegue `moveY` (stessa sequenza con FRAME), poi chiama `movedY`. Reazioni opposte a EDO-X (tranne la patta). |
 | **BUTLER** | `actor/butler` | Python 3.12, autobahn + asyncio streams | Traduce tra WAMP e il socket TCP di TRIS. |
 | **FRAME** | `actor/frame` | Python 3.12, autobahn | Servizio accessorio: converte le coordinate globali di celle e pedine nelle coordinate locali di ciascun braccio. Configurazione in `field.json`. |
-| **TRIS** | `actor/tris` | Python 3.12, asyncio (solo libreria standard) | Motore di gioco simulato: risponde con una casella libera a caso; a campo pieno invia un esito a caso (F, X, Y). |
+| **TRIS** | `actor/tris` | Python 3.12, asyncio (solo libreria standard) | Motore di gioco simulato: risponde con una casella libera a caso e riconosce vittorie e patta reali. |
 
 Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, vedi *Distribuzione su 2 host*). Il tutto e' orchestrato da [docker-compose.yml](../docker-compose.yml) (7 container con il profilo `all`: crossbar, tris, butler, edo-y, frame, wingrid, edo-x-local).
 
@@ -38,9 +38,12 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
 
 - **Handler "risposta subito, lavoro dopo".** `moveX`, `moveY` e `movedX` rispondono immediatamente al chiamante e avviano il lavoro vero (movimento del braccio, interrogazione di TRIS) in un task asincrono (`asyncio.ensure_future`). In questo modo nessuna `call` resta appesa per tutta la durata di un movimento e non si hanno timeout di RPC.
 - **Adapter / ponte (BUTLER).** Isola il protocollo di TRIS (testo su TCP) dal resto del sistema, che parla solo WAMP. Un `asyncio.Lock` serializza le richieste verso TRIS.
-- **Protocollo TRIS.** Una riga di testo per messaggio. Ricevi `1..9`; rispondi `1..9` oppure `F` / `X` / `Y`. Una mossa non valida riceve `ERR`.
+- **Protocollo TRIS.** Una riga di testo per messaggio. Ricevi `1..9`; rispondi `1..9` (mossa di Y), `X` / `F` se la mossa dell'umano chiude la partita, `n Y` / `n F` se la chiude la mossa `n` di Y (cosi' EDO-Y posa comunque l'ultima pedina). Una mossa non valida riceve `ERR`. Ogni connessione TCP e' una partita.
+- **Ultima mossa di Y.** Su `n Y` / `n F` BUTLER chiama `moveY(n)` e pubblica l'esito con argomento `n`. EDO-Y esegue le azioni del braccio una alla volta e nell'ordine di arrivo, quindi prima posa la pedina e poi esulta; WINGRID mostra l'esito solo dopo `movedY(n)`.
+- **Nuova partita.** All'apertura della pagina e su "Nuova partita" WINGRID pubblica `com.tris.new_game`: BUTLER si ricollega a TRIS (partita nuova anche se la pagina e' stata ricaricata a meta'), EDO-X ed EDO-Y ripartono dalla pedina 1. Le pedine sul campo vanno tolte a mano. "Nuova partita" e' disattivato mentre i bracci si muovono. WINGRID registra `movedY` con `force_reregister`: l'ultima finestra aperta prende il controllo, quindi ricaricare la pagina funziona sempre, anche se la sessione precedente non si e' chiusa (pagina nella cache del browser, rete caduta).
 - **Coordinate locali.** I bracci non conoscono il piano globale: per ogni mossa chiedono a FRAME le coordinate locali di pedina e cella (vedi *Coordinate locali*).
-- **Simulazione dei robot.** Ogni attore EDO ha una classe `Arm` con i metodi `place_piece` (riceve gia' le coordinate locali), `celebrate`, `sad`, `salute` che stampano nel log e attendono 2 secondi. Per usare i robot reali basta implementare questi metodi con l'SDK e.DO (la variabile `EDO_IP` e' gia' letta ma non ancora usata).
+- **Bracci e.DO.** EDO-X ed EDO-Y condividono il codice in `actor/edo-common/edo.py` (per questo il loro build context in compose e' `./actor`). La classe `Arm` ha i metodi `place_piece` (riceve gia' le coordinate locali), `celebrate`, `sad`, `salute`: se `config.json -> edo.<braccio>.ip` (o `EDO_IP`) e' impostato li esegue sul robot con la classe `Robot` (SDK `pyedo`, chiamate bloccanti eseguite in un thread con `asyncio.to_thread`), altrimenti scrive nel log e attende 2 secondi. `place_piece` apre la pinza, scende sulla pedina a `pick_z`, la chiude, sale a `safe_z`, scende sulla cella a `place_z`, apre e torna in home (`moveToHome`, braccio verticale): cosi' mentre un braccio gioca l'altro e' sempre in home. Le coordinate locali di FRAME (x verso destra, y in avanti) diventano quelle della base e.DO (x in avanti, y a sinistra). I gesti di esultanza, tristezza e saluto sono movimenti di giunti di ampiezza moderata, da provare la prima volta a bassa velocita'. Nel container `pynput` (usato da `pyedo` per l'arresto con il tasto `k`) gira con il backend `dummy`: all'avvio compare un `NotImplementedError` del suo thread, innocuo.
+- **Avvio senza Docker.** Da `actor/edo-x`: `PYTHONPATH=../edo-common python edo_x.py` (dipendenze in `actor/edo-common/requirements.txt` piu' `pynput`); legge `config.json` dalla radice del repo.
 - **Avvio ordinato.** crossbar ha un `healthcheck` (porta 8080 in ascolto); butler, edo-y e frame (e, nel profilo `all`, edo-x-local) partono solo quando e' `healthy`. Su pc1 EDO-X non puo' aspettarlo (il broker e' su un altro host): `restart: on-failure` lo rilancia finche' il broker non e' raggiungibile. Vale anche per gli altri attori se la connessione cade all'avvio.
 - **Librerie.** `autobahn[asyncio]==24.4.2` (client WAMP Python, backend asyncio); `autobahn-browser 22.10.1` (client WAMP nel browser); `asyncio` della libreria standard per TCP e concorrenza.
 
@@ -72,10 +75,10 @@ docker compose --profile all up --build
 
 Svolgimento:
 
-1. Clicca una casella: compare una `X` sbiadita mentre EDO-X "posa" la pedina (2 s).
-2. Dopo circa altri 2 s EDO-Y posa la sua pedina e compare una `Y`.
-3. Si ripete finche' il campo e' pieno (l'utente fa 5 mosse): TRIS invia un esito a caso e WINGRID mostra corona di alloro (X), grigio (Y) o pollice in su (patta); i robot reagiscono nei log.
-4. "Nuova partita" azzera il campo (TRIS si e' gia' azzerato da solo).
+1. Clicca una casella: compare una `X` sbiadita mentre EDO-X posa la pedina (2 s in simulazione).
+2. Poi EDO-Y posa la sua pedina e compare un cerchio.
+3. Si ripete finche' qualcuno fa tris o il campo e' pieno: WINGRID traccia la linea vincente e mostra corona di alloro (vince X), grigio (vince Y) o pollice in su (patta); i robot reagiscono.
+4. "Nuova partita" azzera il campo e la partita in TRIS.
 
 Per fermare tutto: `docker compose down`.
 
@@ -125,8 +128,9 @@ Si puo' simulare l'utente senza browser chiamando `com.tris.moveX` da un qualunq
 
 ## 5. Limiti noti
 
-- TRIS e' una simulazione casuale: non riconosce le vittorie reali e l'esito arriva solo a campo pieno.
-- I bracci e.DO sono simulati; manca l'integrazione con l'SDK reale.
+- TRIS e' una simulazione: sceglie la mossa a caso tra le caselle libere (vittorie e patta sono quelle reali).
+- Le quote (`safe_z`, `pick_z`, `place_z`) e la posizione dei bracci in `field.json` vanno misurate sul campo vero; i bracci reali non sono stati provati in questo repository.
+- Tolte le pedine dal campo, a fine partita vanno rimesse a mano nei punti di prelievo.
 - Il broker e' aperto (ruolo `anonymous` con tutti i permessi): adatto a una dimostrazione locale, non a un ambiente esposto.
 - WINGRID si collega con `ws://` (non `wss://`) all'indirizzo di `config.json`: nessuna cifratura sul tratto pc1 -> pc2.
 - La geometria dei bracci (`field.json`) e' un modello rigido: 3 punti fissi, solo rotazione e traslazione, nessuna correzione di scala.

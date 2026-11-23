@@ -1,158 +1,433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WINGRID - Tris</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #f4f1ea; color: #222;
-         display: flex; flex-direction: column; align-items: center; margin: 0; padding: 1rem; }
-  h1 { margin: .5rem 0; }
-  #status { min-height: 1.5em; margin-bottom: 1rem; font-size: 1.1rem; }
-  #stage { position: relative; transition: filter .6s; }
-  #stage.gray { filter: grayscale(1); }
-  #board { display: grid; grid-template-columns: repeat(3, 7rem); gap: 6px; }
-  .cell { width: 7rem; height: 7rem; font-size: 3.5rem; font-weight: bold; border: 0;
-          border-radius: 8px; background: #fff; cursor: pointer; box-shadow: 0 1px 4px #0003; }
-  .cell:disabled { cursor: default; }
-  .cell:not(:disabled):hover { background: #e8f0ff; }
-  .cell.X { color: #1a6fd8; } .cell.Y { color: #d8351a; }
-  .cell.pending { opacity: .45; }
-  #overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-             background: #fff8; font-size: 6rem; border-radius: 8px; }
-  #overlay.show { display: flex; }
-  #overlay svg { width: 12rem; height: 12rem; }
-  #again { margin-top: 1rem; padding: .6rem 1.4rem; font-size: 1rem; display: none; }
+  :root {
+    --background: #0b1220;
+    --cell-hover: #111a2d;
+    --grid-line: #26324a;
+    --text: #eef1f6;
+    --x-color: #eef1f6;
+    --y-color: #c9a54b;
+    --cell-size: min(20vh, 28vw, 200px);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4vh;
+    padding: 16px;
+    background: radial-gradient(ellipse at top, #15213a 0%, var(--background) 60%) fixed, var(--background);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    user-select: none;
+  }
+
+  #stage {
+    position: relative;
+    transition: filter .8s;
+  }
+
+  #stage.gray {
+    filter: grayscale(1) brightness(.8);
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, var(--cell-size));
+    gap: 4px;
+    background: var(--grid-line);
+  }
+
+  .cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    padding: 14%;
+    border: 0;
+    background: var(--background);
+    cursor: pointer;
+    transition: background .2s;
+  }
+
+  .cell:disabled {
+    cursor: default;
+  }
+
+  .cell:not(:disabled):hover,
+  .cell:focus-visible {
+    background: var(--cell-hover);
+    outline: none;
+  }
+
+  .cell svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: opacity .3s;
+  }
+
+  .cell.pending svg {
+    opacity: .45;
+  }
+
+  .cell line,
+  .cell circle,
+  #win-line line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .cell line,
+  .cell circle {
+    stroke-width: 7;
+    animation: draw .35s ease-out forwards;
+  }
+
+  .cell line {
+    stroke: var(--x-color);
+  }
+
+  .cell line + line {
+    animation-delay: .15s;
+  }
+
+  .cell circle {
+    stroke: var(--y-color);
+  }
+
+  #stage.finished .cell:not(.winning) svg {
+    opacity: .25;
+  }
+
+  #win-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  #win-line line {
+    stroke-width: 6;
+    animation: draw .45s ease-out .35s forwards;
+  }
+
+  #overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: calc(var(--cell-size) * 1.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .6s .8s;
+  }
+
+  #overlay.show {
+    opacity: 1;
+  }
+
+  #overlay svg {
+    width: 80%;
+    height: 80%;
+  }
+
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  #status {
+    min-height: 1.4em;
+    font-size: clamp(18px, 3vh, 26px);
+    font-weight: 300;
+    letter-spacing: .05em;
+    text-align: center;
+  }
+
+  #new-game {
+    padding: 12px 34px;
+    border: 1px solid var(--grid-line);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color .2s, color .2s, opacity .2s;
+  }
+
+  #new-game:not(:disabled):hover,
+  #new-game:focus-visible {
+    border-color: var(--y-color);
+    color: var(--y-color);
+    outline: none;
+  }
+
+  #new-game:disabled {
+    opacity: .4;
+    cursor: default;
+  }
 </style>
 </head>
 <body>
-<h1>Tris</h1>
-<div id="status">Connessione al broker...</div>
 <div id="stage">
   <div id="board"></div>
   <div id="overlay"></div>
 </div>
-<button id="again">Nuova partita</button>
+<div id="status" aria-live="polite">Connessione al broker…</div>
+<button id="new-game">Nuova partita</button>
 
 <script src="autobahn.min.js"></script>
 <script>
-const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
-const overlay = document.getElementById('overlay');
-const stage = document.getElementById('stage');
-const again = document.getElementById('again');
+const WIN_LINES = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
+];
+
+const MARK_SVG = {
+  X: '<svg viewBox="0 0 100 100"><line x1="15" y1="15" x2="85" y2="85" pathLength="1"/><line x1="85" y1="15" x2="15" y2="85" pathLength="1"/></svg>',
+  Y: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="1"/></svg>',
+};
+
+const OUTCOMES = {
+  'com.tris.winner_x': { winner: 'X', message: 'Hai vinto!', overlay: laurel, gray: false },
+  'com.tris.winner_y': { winner: 'Y', message: 'Vince EDO-Y', overlay: () => '', gray: true },
+  'com.tris.flap': { winner: null, message: 'Pareggio', overlay: () => '&#128077;', gray: false },
+};
+
+const WIN_LINE_OVERHANG = 0.2;
+
+const stageElement = document.getElementById('stage');
+const boardElement = document.getElementById('board');
+const overlayElement = document.getElementById('overlay');
+const statusElement = document.getElementById('status');
+const newGameButton = document.getElementById('new-game');
 const cells = [];
-let myTurn = false;
 
-for (let i = 1; i <= 9; i++) {
-  const b = document.createElement('button');
-  b.className = 'cell';
-  b.disabled = true;
-  b.onclick = () => play(i);
-  boardEl.appendChild(b);
-  cells[i] = b;
+let session = null;
+let board = Array(9).fill('-');
+let playerTurn = false;
+let gameOver = true;
+let pendingOutcome = null;
+
+for (let index = 0; index < 9; index++) {
+  const cell = document.createElement('button');
+  cell.className = 'cell';
+  cell.setAttribute('aria-label', `Casella ${index + 1}`);
+  cell.addEventListener('click', () => playerMove(index));
+  boardElement.appendChild(cell);
+  cells.push(cell);
 }
 
-function setStatus(t) { statusEl.textContent = t; }
+newGameButton.addEventListener('click', startGame);
+updateControls();
 
-function enableFree(on) {
-  myTurn = on;
-  cells.forEach(c => { if (c) c.disabled = !on || c.textContent !== ''; });
+function startGame() {
+  board = Array(9).fill('-');
+  playerTurn = true;
+  gameOver = false;
+  pendingOutcome = null;
+
+  stageElement.classList.remove('finished', 'gray');
+  overlayElement.classList.remove('show');
+  overlayElement.innerHTML = '';
+  const winLine = document.getElementById('win-line');
+  if (winLine) {
+    winLine.remove();
+  }
+  for (const cell of cells) {
+    cell.innerHTML = '';
+    cell.className = 'cell';
+  }
+
+  session.publish('com.tris.new_game');
+  statusElement.textContent = 'Tocca a te';
+  updateControls();
 }
 
-function mark(n, who, pending) {
-  cells[n].textContent = who;
-  cells[n].className = 'cell ' + who + (pending ? ' pending' : '');
-  cells[n].disabled = true;
+async function playerMove(index) {
+  if (!playerTurn || gameOver || board[index] !== '-') {
+    return;
+  }
+
+  playerTurn = false;
+  placeMark(index, 'X');
+  cells[index].classList.add('pending');
+  statusElement.textContent = 'I robot stanno giocando…';
+  updateControls();
+
+  try {
+    await session.call('com.tris.moveX', [index + 1]);
+  } catch (error) {
+    board[index] = '-';
+    cells[index].innerHTML = '';
+    cells[index].className = 'cell';
+    playerTurn = true;
+    statusElement.textContent = `Errore: ${error.error || error}`;
+    updateControls();
+  }
+}
+
+function onMovedY(args) {
+  placeMark(args[0] - 1, 'Y');
+  clearPending();
+
+  if (pendingOutcome) {
+    showOutcome(pendingOutcome);
+  } else if (!gameOver) {
+    playerTurn = true;
+    statusElement.textContent = 'Tocca a te';
+  }
+  updateControls();
+  return true;
+}
+
+function onOutcome(topic, args) {
+  if (gameOver) {
+    return;
+  }
+  const lastMoveY = args && args[0];
+  if (lastMoveY && board[lastMoveY - 1] !== 'Y') {
+    pendingOutcome = topic;
+  } else {
+    showOutcome(topic);
+  }
+}
+
+function showOutcome(topic) {
+  const outcome = OUTCOMES[topic];
+  gameOver = true;
+  playerTurn = false;
+  pendingOutcome = null;
+  clearPending();
+
+  const winningLine = WIN_LINES.find((line) => line.every((i) => board[i] === outcome.winner));
+  if (winningLine) {
+    for (const i of winningLine) {
+      cells[i].classList.add('winning');
+    }
+    drawWinLine(winningLine, outcome.winner);
+  }
+
+  stageElement.classList.add('finished');
+  stageElement.classList.toggle('gray', outcome.gray);
+  overlayElement.innerHTML = outcome.overlay();
+  overlayElement.classList.add('show');
+  statusElement.textContent = outcome.message;
+  updateControls();
+}
+
+function placeMark(index, mark) {
+  board[index] = mark;
+  cells[index].innerHTML = MARK_SVG[mark];
+}
+
+function clearPending() {
+  for (const cell of cells) {
+    cell.classList.remove('pending');
+  }
+}
+
+function cellCenter(index) {
+  return [(index % 3) * 100 + 50, Math.floor(index / 3) * 100 + 50];
+}
+
+function drawWinLine(line, mark) {
+  const [startX, startY] = cellCenter(line[0]);
+  const [endX, endY] = cellCenter(line[2]);
+  const offsetX = (endX - startX) * WIN_LINE_OVERHANG;
+  const offsetY = (endY - startY) * WIN_LINE_OVERHANG;
+
+  stageElement.insertAdjacentHTML('beforeend', `
+    <svg id="win-line" viewBox="0 0 300 300">
+      <line x1="${startX - offsetX}" y1="${startY - offsetY}"
+            x2="${endX + offsetX}" y2="${endY + offsetY}"
+            pathLength="1" style="stroke: var(--${mark.toLowerCase()}-color)"/>
+    </svg>`);
 }
 
 function laurel() {
-  // corona di alloro: due rami di foglie ai lati di un cerchio
   let leaves = '';
-  for (let s of [-1, 1]) {
+  for (const side of [-1, 1]) {
     for (let k = 0; k < 9; k++) {
-      const t = (25 + k * 15) * Math.PI / 180;           // dal basso verso l'alto
-      const x = 100 + s * 62 * Math.sin(t);
-      const y = 100 + 62 * Math.cos(t);
-      const tang = Math.atan2(-Math.sin(t), s * Math.cos(t)) * 180 / Math.PI; // tangente al cerchio
-      leaves += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="16" ry="6" fill="#4a9a3a" `
-              + `stroke="#2f6d24" transform="rotate(${(tang).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
+      const angle = (25 + k * 15) * Math.PI / 180;
+      const x = 100 + side * 62 * Math.sin(angle);
+      const y = 100 + 62 * Math.cos(angle);
+      const tangent = Math.atan2(-Math.sin(angle), side * Math.cos(angle)) * 180 / Math.PI;
+      leaves += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="16" ry="6" style="fill: var(--y-color)"
+                  transform="rotate(${tangent.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`;
     }
   }
-  return `<svg viewBox="0 0 200 200">${leaves}<text x="100" y="118" font-size="64" text-anchor="middle" fill="#c9a227">&#9733;</text></svg>`;
+  return `<svg viewBox="0 0 200 200">${leaves}</svg>`;
 }
 
-function showOutcome(html, gray) {
-  cells.forEach(c => { if (c) c.classList.remove('pending'); });
-  overlay.innerHTML = html;
-  overlay.classList.add('show');
-  stage.classList.toggle('gray', !!gray);
-  enableFree(false);
-  again.style.display = 'inline-block';
+function updateControls() {
+  cells.forEach((cell, index) => {
+    cell.disabled = !session || !playerTurn || gameOver || board[index] !== '-';
+  });
+  newGameButton.disabled = !session || (!gameOver && !playerTurn);
 }
 
-function reset() {
-  cells.forEach(c => { if (c) { c.textContent = ''; c.className = 'cell'; } });
-  overlay.classList.remove('show');
-  stage.classList.remove('gray');
-  again.style.display = 'none';
-  enableFree(true);
-  setStatus('Tocca a te (X): scegli una casella');
-}
-again.onclick = reset;
-
-let session;
-async function play(n) {
-  if (!myTurn) return;
-  enableFree(false);
-  mark(n, 'X', true);
-  setStatus('EDO-X sta posizionando la tua pedina...');
-  try {
-    await session.call('com.tris.moveX', [n]);
-  } catch (e) {
-    setStatus('Errore: ' + (e.error || e));
-    cells[n].textContent = ''; cells[n].className = 'cell';
-    enableFree(true);
-  }
-}
-
-// indirizzo del broker: config.json (broker.host / broker.port / broker.realm);
-// se assente, il broker e' chi serve la pagina.
 async function loadBroker() {
   try {
-    const r = await fetch('config.json', { cache: 'no-store' });
-    if (r.ok) {
-      const b = (await r.json()).broker || {};
-      if (b.host) return { url: `ws://${b.host}:${b.port || 8080}/ws`, realm: b.realm || 'realm1' };
+    const response = await fetch('config.json', { cache: 'no-store' });
+    if (response.ok) {
+      const broker = (await response.json()).broker || {};
+      if (broker.host) {
+        return { url: `ws://${broker.host}:${broker.port || 8080}/ws`, realm: broker.realm || 'realm1' };
+      }
     }
-  } catch (e) { /* ripiega sull'host della pagina */ }
-  return { url: 'ws://' + location.host + '/ws', realm: 'realm1' };
+  } catch (error) {
+    console.warn('config.json non disponibile, uso l\'host della pagina', error);
+  }
+  return { url: `ws://${location.host}/ws`, realm: 'realm1' };
 }
 
-loadBroker().then(b => {
-  setStatus('Connessione al broker ' + b.url + ' ...');
-  const connection = new autobahn.Connection({ url: b.url, realm: b.realm });
-  connection.onopen = onOpen;
-  connection.onclose = (reason) => { setStatus('Connessione persa: ' + reason); enableFree(false); };
+async function joinGame(newSession) {
+  await newSession.register('com.tris.movedY', onMovedY, { force_reregister: true });
+  for (const topic of Object.keys(OUTCOMES)) {
+    await newSession.subscribe(topic, (args) => onOutcome(topic, args));
+  }
+  session = newSession;
+  startGame();
+}
+
+loadBroker().then((broker) => {
+  const connection = new autobahn.Connection({ url: broker.url, realm: broker.realm });
+  connection.onopen = joinGame;
+  connection.onclose = (reason) => {
+    session = null;
+    playerTurn = false;
+    statusElement.textContent = `Connessione al broker persa (${reason}), riprovo…`;
+    updateControls();
+    return false;
+  };
   connection.open();
 });
-
-const onOpen = async (s) => {
-  session = s;
-  // l'agente (EDO-Y) ha finito di muovere: aggiorna il campo
-  await s.register('com.tris.movedY', (args) => {
-    const n = args[0];
-    mark(n, 'Y', false);
-    cells.forEach(c => { if (c) c.classList.remove('pending'); });
-    enableFree(true);
-    setStatus('Tocca a te (X): scegli una casella');
-    return true;
-  });
-  await s.subscribe('com.tris.winner_x', () => showOutcome(laurel(), false) || setStatus('Hai vinto!'));
-  await s.subscribe('com.tris.winner_y', () => showOutcome('', true) || setStatus('Ha vinto l\'agente (Y)'));
-  await s.subscribe('com.tris.flap', () => showOutcome('&#128077;', false) || setStatus('Patta!'));
-  reset();
-};
 </script>
 </body>
 </html>
