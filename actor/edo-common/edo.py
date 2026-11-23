@@ -44,7 +44,6 @@ class Robot:
         self.safe_z = settings.get("safe_z", 150)
         self.pick_z = settings.get("pick_z", 20)
         self.place_z = settings.get("place_z", 25)
-        self.orientation = tuple(settings.get("orientation", self.ORIENTATION))
         self.home()
 
     def home(self):
@@ -73,7 +72,7 @@ class Robot:
 
     def _move(self, xy, z):
         # piano locale di FRAME: x verso destra, y in avanti; base e.DO: x in avanti, y a sinistra
-        self.edo.moveCartesian(xy[1], -xy[0], z, *self.orientation)
+        self.edo.moveCartesian(xy[1], -xy[0], z, *self.ORIENTATION)
 
     def _gesture(self, poses):
         for pose in poses:
@@ -168,15 +167,10 @@ class EdoSession(ApplicationSession):
         self.used = 0
 
 
-def broker_address():
+def run(me):
     broker = load_config().get("broker", {})
     # precedenza: variabile d'ambiente > config.json > default
     url = os.environ.get("CROSSBAR_URL") or \
         f"ws://{broker.get('host', 'crossbar')}:{broker.get('port', 8080)}/ws"
     realm = os.environ.get("CROSSBAR_REALM") or broker.get("realm", "realm1")
-    return url, realm
-
-
-def run(me):
-    url, realm = broker_address()
     ApplicationRunner(url=url, realm=realm, extra={"me": me}).run(EdoSession)
