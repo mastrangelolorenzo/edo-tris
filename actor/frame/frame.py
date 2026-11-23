@@ -1,8 +1,9 @@
 """Geometria: celle e pedine nel piano locale di un braccio.
 
 Il piano locale ha l'origine al centro della base del braccio, x verso la sua destra
-e y in avanti (verso dove punta in home). Si puo' misurare direttamente in questo
-piano, oppure nel piano globale del tavolo e convertire.
+e y in avanti (verso dove punta in home). I punti si leggono dall'app e.DO portando
+la pinza sopra ciascuno (X in avanti, Y a sinistra), oppure si misurano nel piano
+globale del tavolo e si convertono.
 
 Nel secondo caso il sistema locale di un braccio e' definito da 3 punti fissi, dati in
 coordinate globali:
@@ -56,6 +57,11 @@ def grid_cells(center, cell_1):
             for n in range(1, 10)}
 
 
+def edo_to_local(point):
+    """Base e.DO (x in avanti, y a sinistra) -> piano locale (x a destra, y in avanti)."""
+    return (-point[1], point[0])
+
+
 def global_cells(config):
     if "cells" in config:
         return {int(k): tuple(v) for k, v in config["cells"].items()}
@@ -65,7 +71,7 @@ def global_cells(config):
 class Field:
     """Celle e pedine di ogni braccio nelle sue coordinate locali.
 
-    Formato per braccio: grid (center, cell_1) e pieces misurati dalla base del braccio.
+    Formato per braccio: grid (center, cell_1) e pieces con le X, Y lette dall'app e.DO.
     Formato globale: cells o grid a livello radice, e per ogni braccio origin/left/right e pieces globali.
     """
 
@@ -74,7 +80,8 @@ class Field:
         for name, arm in config["arms"].items():
             pieces = {int(k): tuple(v) for k, v in arm["pieces"].items()}
             if "grid" in arm:
-                cells = grid_cells(arm["grid"]["center"], arm["grid"]["cell_1"])
+                cells = grid_cells(edo_to_local(arm["grid"]["center"]), edo_to_local(arm["grid"]["cell_1"]))
+                pieces = {n: edo_to_local(p) for n, p in pieces.items()}
             else:
                 frame = Frame(arm["origin"], arm["left"], arm["right"])
                 cells = {n: frame.to_local(p) for n, p in global_cells(config).items()}

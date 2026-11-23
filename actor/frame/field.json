@@ -1,16 +1,16 @@
 {
-  "_nota": "mm, misurati dal centro della base di ogni braccio: x verso la sua destra, y in avanti (verso dove punta in home). grid: centro della casella 5 e centro della casella 1, le altre 7 sono calcolate. pieces: le 5 pedine da prendere.",
+  "_nota": "Per ogni braccio, X e Y in mm lette dall'app e.DO (movimento manuale, coordinate cartesiane) con la pinza sopra il punto. grid: centro della casella 5 e centro della casella 1, le altre 7 sono calcolate. pieces: le 5 pedine da prendere.",
   "arms": {
     "EDO-X": {
-      "grid": {"center": [0, 300], "cell_1": [-100, 400]},
+      "grid": {"center": [300, 0], "cell_1": [400, 100]},
       "pieces": {
-        "1": [-200, 100], "2": [-150, 100], "3": [-100, 100], "4": [-50, 100], "5": [0, 100]
+        "1": [100, 200], "2": [100, 150], "3": [100, 100], "4": [100, 50], "5": [100, 0]
       }
     },
     "EDO-Y": {
-      "grid": {"center": [0, 300], "cell_1": [100, 200]},
+      "grid": {"center": [300, 0], "cell_1": [200, -100]},
       "pieces": {
-        "1": [-200, 100], "2": [-150, 100], "3": [-100, 100], "4": [-50, 100], "5": [0, 100]
+        "1": [100, 200], "2": [100, 150], "3": [100, 100], "4": [100, 50], "5": [100, 0]
       }
     }
   }
