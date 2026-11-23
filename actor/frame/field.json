@@ -1,21 +1,16 @@
 {
-  "_nota": "Coordinate globali in mm. grid: centro della casella 5 e centro della casella 1 (in alto a sinistra con x verso destra e y in avanti), le altre 7 sono calcolate. Per ogni braccio: origin = origine, left/right = spigoli sinistro/destro (visti dal braccio rivolto al campo).",
-  "grid": {"center": [300, 300], "cell_1": [200, 400]},
+  "_nota": "mm, misurati dal centro della base di ogni braccio: x verso la sua destra, y in avanti (verso dove punta in home). grid: centro della casella 5 e centro della casella 1, le altre 7 sono calcolate. pieces: le 5 pedine da prendere.",
   "arms": {
     "EDO-X": {
-      "origin": [300, 0],
-      "left": [250, 0],
-      "right": [350, 0],
+      "grid": {"center": [0, 300], "cell_1": [-100, 400]},
       "pieces": {
-        "1": [100, 100], "2": [150, 100], "3": [200, 100], "4": [250, 100], "5": [300, 100]
+        "1": [-200, 100], "2": [-150, 100], "3": [-100, 100], "4": [-50, 100], "5": [0, 100]
       }
     },
     "EDO-Y": {
-      "origin": [300, 600],
-      "left": [350, 600],
-      "right": [250, 600],
+      "grid": {"center": [0, 300], "cell_1": [100, 200]},
       "pieces": {
-        "1": [500, 500], "2": [450, 500], "3": [400, 500], "4": [350, 500], "5": [300, 500]
+        "1": [-200, 100], "2": [-150, 100], "3": [-100, 100], "4": [-50, 100], "5": [0, 100]
       }
     }
   }

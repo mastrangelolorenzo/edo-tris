@@ -49,7 +49,7 @@ Su pc1 girano WINGRID ed EDO-X, su pc2 il resto (oppure tutto su una macchina, v
 
 ### Coordinate locali (FRAME)
 
-`actor/frame/field.json` contiene, in coordinate **globali** (mm): la griglia (`grid`: centro della casella 5 e centro della casella 1, in alto a sinistra con x verso destra e y in avanti; le altre 7 celle sono calcolate, griglia quadrata; in alternativa si possono elencare tutte e 9 in `cells`), e per ogni braccio le sue pedine e i 3 punti fissi `origin`, `left`, `right`. Convenzione: asse x locale = direzione left -> right; asse y locale = x ruotato di 90 gradi antiorario (in avanti, visto dal braccio rivolto al campo); origine locale = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
+`actor/frame/field.json` contiene, per ogni braccio, misure in mm prese dal **centro della sua base**, con x verso la sua destra e y in avanti (verso dove punta in home): `grid` (centro della casella 5 e centro della casella 1; le altre 7 celle sono calcolate, griglia quadrata) e `pieces` (le 5 pedine da prendere). Basta il metro: niente punto zero comune sul tavolo, e ogni braccio si sposta rimisurando solo i suoi punti. Resta supportato il formato globale (`cells` o `grid` alla radice, e per ogni braccio `origin`, `left`, `right` e pedine in coordinate del tavolo): x locale = direzione left -> right, y locale = x ruotato di 90 gradi antiorario, origine = `origin`. Il file e' montato come volume e riletto a ogni richiesta: per spostare un braccio basta modificarlo.
 
 Su `moveX(3)` EDO-X: sceglie la prossima pedina (1..5), chiede `localPiece("EDO-X", p)` e `localCell("EDO-X", 3)`, sposta la pedina, poi chiama `movedX(3)`. La geometria pura e' in `actor/frame/frame.py` (classi `Frame`, `Field`).
 
@@ -133,5 +133,5 @@ Si puo' simulare l'utente senza browser chiamando `com.tris.moveX` da un qualunq
 - Tolte le pedine dal campo, a fine partita vanno rimesse a mano nei punti di prelievo.
 - Il broker e' aperto (ruolo `anonymous` con tutti i permessi): adatto a una dimostrazione locale, non a un ambiente esposto.
 - WINGRID si collega con `ws://` (non `wss://`) all'indirizzo di `config.json`: nessuna cifratura sul tratto pc1 -> pc2.
-- La geometria dei bracci (`field.json`) e' un modello rigido: 3 punti fissi, solo rotazione e traslazione, nessuna correzione di scala.
+- La griglia e' calcolata da 2 punti: deve essere quadrata e regolare, e un errore sul centro raddoppia sulle caselle d'angolo. Se non lo e', si elencano le 9 celle con il formato globale (`cells`).
 - Il numero di pedine per braccio e' fisso a 5 (`PIECES` in `edo_x.py` / `edo_y.py`).

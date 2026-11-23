@@ -41,7 +41,7 @@ Su pc1 e pc2 serve aprire/inoltrare la porta del broker verso pc1. All'avvio EDO
 | Cartella | Attore |
 |---|---|
 | `actor/wingrid` | interfaccia web (html+js, autobahn), servita da nginx su pc1 |
-| `actor/frame` | conversione coordinate globali -> locali dei bracci |
+| `actor/frame` | coordinate di celle e pedine per ogni braccio (`field.json`) |
 | `config.json` | indirizzi di broker e motore di gioco |
 | `actor/edo-x`, `actor/edo-y` | bracci robotici (python): entry point dei due attori |
 | `actor/edo-common` | codice comune dei bracci: sessione WAMP, braccio reale (`pyedo`) o simulato |

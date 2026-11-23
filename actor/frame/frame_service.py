@@ -1,7 +1,7 @@
 """FRAME - servizio di conversione coordinate globali -> locali del braccio.
 
-Legge la configurazione (celle, pedine e posizione dei bracci nel piano
-globale) e registra:
+Legge la configurazione (griglia e pedine di ogni braccio, vedi frame.py)
+e registra:
   - com.tris.localCell(arm, num)  -> [x, y] locali della cella num
   - com.tris.localPiece(arm, num) -> [x, y] locali della pedina num
 La configurazione viene riletta a ogni richiesta: spostare un braccio

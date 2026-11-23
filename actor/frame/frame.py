@@ -1,6 +1,10 @@
-"""Geometria: dal piano globale al piano locale di un braccio.
+"""Geometria: celle e pedine nel piano locale di un braccio.
 
-Il sistema locale di un braccio e' definito da 3 punti fissi, dati in
+Il piano locale ha l'origine al centro della base del braccio, x verso la sua destra
+e y in avanti (verso dove punta in home). Si puo' misurare direttamente in questo
+piano, oppure nel piano globale del tavolo e convertire.
+
+Nel secondo caso il sistema locale di un braccio e' definito da 3 punti fissi, dati in
 coordinate globali:
   - origin: l'origine (0, 0) locale
   - left:   spigolo sinistro
@@ -52,20 +56,30 @@ def grid_cells(center, cell_1):
             for n in range(1, 10)}
 
 
+def global_cells(config):
+    if "cells" in config:
+        return {int(k): tuple(v) for k, v in config["cells"].items()}
+    return grid_cells(config["grid"]["center"], config["grid"]["cell_1"])
+
+
 class Field:
-    """Configurazione: celle e pedine nel piano globale, bracci con i loro 3 punti."""
+    """Celle e pedine di ogni braccio nelle sue coordinate locali.
+
+    Formato per braccio: grid (center, cell_1) e pieces misurati dalla base del braccio.
+    Formato globale: cells o grid a livello radice, e per ogni braccio origin/left/right e pieces globali.
+    """
 
     def __init__(self, config):
-        if "cells" in config:
-            self.cells = {int(k): tuple(v) for k, v in config["cells"].items()}
-        else:
-            self.cells = grid_cells(config["grid"]["center"], config["grid"]["cell_1"])
         self.arms = {}
         for name, arm in config["arms"].items():
-            self.arms[name] = {
-                "frame": Frame(arm["origin"], arm["left"], arm["right"]),
-                "pieces": {int(k): tuple(v) for k, v in arm["pieces"].items()},
-            }
+            pieces = {int(k): tuple(v) for k, v in arm["pieces"].items()}
+            if "grid" in arm:
+                cells = grid_cells(arm["grid"]["center"], arm["grid"]["cell_1"])
+            else:
+                frame = Frame(arm["origin"], arm["left"], arm["right"])
+                cells = {n: frame.to_local(p) for n, p in global_cells(config).items()}
+                pieces = {n: frame.to_local(p) for n, p in pieces.items()}
+            self.arms[name] = {"cells": cells, "pieces": pieces}
 
     def _arm(self, arm):
         if arm not in self.arms:
@@ -73,12 +87,13 @@ class Field:
         return self.arms[arm]
 
     def local_cell(self, arm, num):
-        if num not in self.cells:
+        cells = self._arm(arm)["cells"]
+        if num not in cells:
             raise KeyError(f"cella sconosciuta: {num}")
-        return self._arm(arm)["frame"].to_local(self.cells[num])
+        return cells[num]
 
     def local_piece(self, arm, num):
-        a = self._arm(arm)
-        if num not in a["pieces"]:
+        pieces = self._arm(arm)["pieces"]
+        if num not in pieces:
             raise KeyError(f"pedina sconosciuta per {arm}: {num}")
-        return a["frame"].to_local(a["pieces"][num])
+        return pieces[num]

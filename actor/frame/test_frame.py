@@ -1,6 +1,9 @@
 import unittest
 
-from frame import grid_cells
+import json
+import os
+
+from frame import Field, grid_cells
 
 EXPLICIT = {
     1: (200, 400), 2: (300, 400), 3: (400, 400),
@@ -24,6 +27,31 @@ class GridCellsTest(unittest.TestCase):
         self.assertAlmostEqual(cells[9][1], -100)
         self.assertAlmostEqual(cells[3][0], 100)
         self.assertAlmostEqual(cells[3][1], 0)
+
+
+GLOBAL_CONFIG = {
+    "grid": {"center": [300, 300], "cell_1": [200, 400]},
+    "arms": {
+        "EDO-X": {"origin": [300, 0], "left": [250, 0], "right": [350, 0],
+                  "pieces": {"1": [100, 100], "5": [300, 100]}},
+        "EDO-Y": {"origin": [300, 600], "left": [350, 600], "right": [250, 600],
+                  "pieces": {"1": [500, 500], "5": [300, 500]}},
+    },
+}
+
+
+class FieldTest(unittest.TestCase):
+    def test_local_config_matches_global_config(self):
+        with open(os.path.join(os.path.dirname(__file__), "field.json"), encoding="utf-8") as f:
+            local = Field(json.load(f))
+        measured = Field(GLOBAL_CONFIG)
+        for arm in ("EDO-X", "EDO-Y"):
+            for n in range(1, 10):
+                for a, b in zip(local.local_cell(arm, n), measured.local_cell(arm, n)):
+                    self.assertAlmostEqual(a, b)
+            for n in (1, 5):
+                for a, b in zip(local.local_piece(arm, n), measured.local_piece(arm, n)):
+                    self.assertAlmostEqual(a, b)
 
 
 if __name__ == "__main__":
